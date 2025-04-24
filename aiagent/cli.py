@@ -1,9 +1,12 @@
 import shlex
 from click.testing import CliRunner
 import click
+import os
 from aiagent.github_api import fetch_repo_info, fetch_repo_releases
 from storage.local import load_tracked_repos, save_tracked_repos
 from storage.releases import save_releases, load_releases
+from aiagent.scheduler import start_scheduler
+from aiagent.report_renderer import render_reports
 from utils.format import print_formatted_releases
 
 TRACK_FILE = "tracked_repos.json"
@@ -27,6 +30,7 @@ def cli():
     click.echo(" - remove <repo>:    Remove a tracked repository")
     click.echo(" - update:           Update all tracked repositories")
     click.echo(" - releases <repo>:  View the release notes for a repository\n")
+    click.echo(" - start: Start the background scheduler for periodic updates\n")
 
 @cli.command()
 def help():
@@ -39,7 +43,24 @@ def help():
     click.echo(" - releases <repo>  📝 查看指定仓库的 release notes")
     click.echo(" - help             🆘 显示此帮助信息")
     click.echo(" - quit             👋 退出 CLI\n")
-    
+
+# 检查 GitHub token
+def check_token():
+    """检查 GITHUB_TOKEN 是否有效，若无效或缺失，提示用户"""
+    if not os.getenv("GITHUB_TOKEN"):
+        click.echo("❌ 错误: GITHUB_TOKEN 未设置。请在 .env 文件中设置 GitHub token。")
+        exit(1)
+
+    try:
+        # 尝试进行简单的 API 请求验证 token 是否有效
+        fetch_repo_info("octocat/Hello-World")  # 可以使用任何公开仓库进行简单的请求
+    except PermissionError:
+        click.echo("❌ 错误: 无效的 GITHUB_TOKEN。请检查 token 是否正确或已过期。")
+        exit(1)
+    except Exception as e:
+        click.echo(f"❌ 错误: API 请求失败，原因：{str(e)}")
+        exit(1)
+
 @cli.command()
 @click.argument('repo', default='openai/gpt-4')
 def track(repo):
@@ -48,6 +69,7 @@ def track(repo):
     if repo in repos:
         click.echo(f"{repo} is already tracked.")
     else:
+        check_token()  # 在每个命令前检查 token
         try:
             info = fetch_repo_info(repo)
             click.echo(f"Tracking {repo}...")
@@ -91,18 +113,24 @@ def update():
         click.echo("No repositories to update.")
     else:
         click.echo("Updating tracked repositories:")
-
+        check_token()  # 在每个命令前检查 token
+        all_data = []
         for repo in repos:
             click.echo(f"- Checking {repo}...")
+            info = fetch_repo_info(repo)
             releases = fetch_repo_releases(repo)
             if releases:
                 save_releases(repo, releases)
                 click.echo("\n📦 最近的 Releases：")
+                all_data.append({"repo": repo, "info": info, "releases": releases})
                 for rel in releases:
                     click.echo(f"- [{rel['tag_name']}] {rel['name']} ({rel['published_at']})")
                     click.echo(f"  {rel['body']}\n")
             else:
                 click.echo("🔍 暂无 release 信息。")
+        report = render_reports(all_data)
+        click.echo("\n📄 Update Report:\n")
+        click.echo(report)
 
 @cli.command()
 @click.argument("repo")
@@ -114,6 +142,12 @@ def releases(repo):
         print_formatted_releases(releases)
     except Exception as e:
         click.echo(f"❌ 加载失败: {str(e)}")
+
+@cli.command()
+def start():
+    """Start the background scheduler for periodic updates"""
+    click.echo("Starting the background scheduler for periodic updates...")
+    start_scheduler()
 
 @cli.command()
 def quit():

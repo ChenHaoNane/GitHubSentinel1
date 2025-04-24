@@ -1,8 +1,8 @@
 [
   {
-    "tag_name": "v1.75.0",
-    "name": "v1.75.0",
-    "published_at": "2025-04-16T16:48:55Z",
-    "body": "## 1.75.0 (2025-04-16)\n\nFull Changelog: [v1.74.1...v1.75.0](https://github.com/openai/openai-python/compare/v1.74.1...v1.75.0)\n\n### Features\n\n* **api:** add o3 and o4-mini model IDs ([4bacbd5](https://github.com/openai/openai-python/commit/4bacbd5503137e266c127dc643ebae496cb4f158))..."
+    "tag_name": "v1.76.0",
+    "name": "v1.76.0",
+    "published_at": "2025-04-23T16:33:11Z",
+    "body": "## 1.76.0 (2025-04-23)\n\nFull Changelog: [v1.75.0...v1.76.0](https://github.com/openai/openai-python/compare/v1.75.0...v1.76.0)\n\n### Features\n\n* **api:** adding new image model support ([74d7692](https://github.com/openai/openai-python/commit/74d7692e94c9dca96db8793809d75631c22dbb87))\n\n\n### Bug Fixes..."
   }
 ]

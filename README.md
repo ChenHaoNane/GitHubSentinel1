@@ -37,6 +37,16 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## 🔐 Environment Setup
+
+To access the GitHub API securely, set up a `.env` file in your project root:
+
+1. Rename `.env.example` to `.env`
+2. Fill in your [GitHub Personal Access Token](https://github.com/settings/tokens):
+
+```env
+GITHUB_TOKEN=your_token_here
+
 ---
 
 ## 🛠️ Usage

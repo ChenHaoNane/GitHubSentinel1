@@ -65,3 +65,6 @@ Thumbs.db
 .mypy_cache/
 .dmypy.json
 .pyre/
+
+# Ignore environment variables
+.env

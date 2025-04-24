@@ -19,3 +19,17 @@ All notable changes to this project will be documented in this file.
 
 ## Upcoming versions
 - v0.2: GitHub OAuth support, Background task scheduler, Database storage integration
+
+# Changelog
+
+## [v0.11] - 2025-04-24
+
+### Added
+- Notifier module with support for console output (placeholders for email, wechat, slack)
+- Config file `config.json` to manage update intervals and notification methods
+- Integrated notifier into scheduler for post-update report delivery
+
+### Changed
+- Refactored update logic to improve modularity and future extensibility
+
+---
