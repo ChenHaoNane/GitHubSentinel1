@@ -10,7 +10,6 @@ from openai import OpenAI
 client = OpenAI()
 def chat_with_openai(prompt, model="gpt-4o"):
     """用 OpenAI 模型完成一个简单的对话"""
-    print(model)
     try:
         response = client.chat.completions.create(
             model = model,
@@ -18,7 +17,7 @@ def chat_with_openai(prompt, model="gpt-4o"):
                 {"role": "user", "content": prompt}
             ]
         )
-        content = response['choices'][0]['message']['content'].strip()
+        content = response.choices[0].message.content.strip()
         return content
     except Exception as e:
         raise RuntimeError(f"调用 OpenAI 失败: {e}")

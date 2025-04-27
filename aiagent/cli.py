@@ -171,14 +171,17 @@ def export():
             click.echo(f"Failed to fetch data for {repo}: {e}")
 
     report_md = render_reports(all_data)
-    polished_report = chat_with_openai(f"请帮我润色下面这篇 GitHub 项目日报，使其更正式：\n\n{report_md[0: 100]}")
-    today = datetime.now().strftime("%Y-%m-%d")
+    if (not report_md):
+        click.echo("✅ Daily report empty")
+    else:
+        polished_report = chat_with_openai(f"请帮我润色下面这篇 GitHub 项目日报，使其更正式：\n\n{report_md}")
+        today = datetime.now().strftime("%Y-%m-%d")
 
-    filename = f"daily_report_{today}.md"
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(polished_report)
+        filename = f"daily_report_{today}.md"
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(polished_report)
 
-    click.echo("✅ Daily report generated: daily_report.md")
+        click.echo("✅ Daily report generated: daily_report.md")
 
 @cli.command()
 def quit():
