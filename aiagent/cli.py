@@ -1,12 +1,14 @@
 import shlex
-from click.testing import CliRunner
 import click
+from click.testing import CliRunner
 import os
-from aiagent.github_api import fetch_repo_info, fetch_repo_releases
+from datetime import datetime
+from aiagent.github_api import fetch_repo_info, fetch_repo_releases, fetch_repo_all
 from storage.local import load_tracked_repos, save_tracked_repos
 from storage.releases import save_releases, load_releases
 from aiagent.scheduler import start_scheduler
 from aiagent.report_renderer import render_reports
+from llm.openai_client import chat_with_openai
 from utils.format import print_formatted_releases
 
 TRACK_FILE = "tracked_repos.json"
@@ -31,6 +33,7 @@ def cli():
     click.echo(" - update:           Update all tracked repositories")
     click.echo(" - releases <repo>:  View the release notes for a repository\n")
     click.echo(" - start: Start the background scheduler for periodic updates\n")
+    click.echo(" - export: export all tracked repo dayily report\n")
 
 @cli.command()
 def help():
@@ -43,6 +46,7 @@ def help():
     click.echo(" - releases <repo>  📝 查看指定仓库的 release notes")
     click.echo(" - help             🆘 显示此帮助信息")
     click.echo(" - quit             👋 退出 CLI\n")
+    click.echo(" - export           导出所有 tracked repo 的每日 GitHub 动态日报")
 
 # 检查 GitHub token
 def check_token():
@@ -148,6 +152,33 @@ def start():
     """Start the background scheduler for periodic updates"""
     click.echo("Starting the background scheduler for periodic updates...")
     start_scheduler()
+
+@cli.command()
+def export():
+    """导出所有 tracked repo 的每日 GitHub 动态日报"""
+    repos = load_tracked_repos(TRACK_FILE)
+    if not repos:
+        click.echo("No repositories tracked.")
+        return
+
+    all_data = []
+    for repo in repos:
+        click.echo(f"Fetching data for {repo}...")
+        try:
+            repo_data = fetch_repo_all(repo)
+            all_data.append(repo_data)
+        except Exception as e:
+            click.echo(f"Failed to fetch data for {repo}: {e}")
+
+    report_md = render_reports(all_data)
+    polished_report = chat_with_openai(f"请帮我润色下面这篇 GitHub 项目日报，使其更正式：\n\n{report_md[0: 100]}")
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    filename = f"daily_report_{today}.md"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(polished_report)
+
+    click.echo("✅ Daily report generated: daily_report.md")
 
 @cli.command()
 def quit():

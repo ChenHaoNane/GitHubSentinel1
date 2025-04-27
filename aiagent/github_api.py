@@ -77,3 +77,86 @@ def fetch_repo_releases(repo, count=1):
         })
 
     return releases
+def fetch_pull_requests(repo):
+    """
+    Fetch open pull requests for a given GitHub repository.
+    :param repo: format 'owner/repo'
+    :return: list of pull request dicts
+    """
+    url = f"{GITHUB_API}/repos/{repo}/pulls"
+    response = requests.get(url, headers=_headers())
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch pull requests for {repo}: {response.status_code} {response.text}")
+
+    return response.json()
+
+def fetch_issues(repo):
+    """
+    Fetch open issues for a given GitHub repository.
+    (excluding pull requests)
+    :param repo: format 'owner/repo'
+    :return: list of issue dicts
+    """
+    url = f"{GITHUB_API}/repos/{repo}/issues"
+    params = {"state": "open", "filter": "all"}
+    response = requests.get(url, headers=_headers(), params=params)
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch issues for {repo}: {response.status_code} {response.text}")
+
+    # GitHub API 把 PR 也算进 issues，需要过滤掉
+    issues = [issue for issue in response.json() if "pull_request" not in issue]
+    return issues
+
+def fetch_repo_all(repo):
+    """一次性拉取 repo 的信息、releases、PRs、issues"""
+    info = fetch_repo_info(repo)
+    releases = fetch_repo_releases(repo)
+    pulls = fetch_pull_requests(repo)
+    issues = fetch_issues(repo)
+
+    return {
+        "repo": repo,
+        "info": {
+            "full_name": info.get("full_name"),
+            "description": info.get("description"),
+            "stars": info.get("stargazers_count"),
+            "updated_at": info.get("updated_at"),
+            "url": info.get("html_url"),
+        },
+        "releases": releases,
+        "pull_requests": pulls,
+        "issues": issues
+    }
+
+def save_daily_progress(date_str, repo, pull_requests, issues, output_dir="storage/data"):
+    """
+    Save today's pull requests and issues into a Markdown file.
+    :param date_str: 'YYYY-MM-DD'
+    :param repo: 'owner/repo'
+    :param pull_requests: list of PR dicts
+    :param issues: list of issue dicts
+    :param output_dir: where to save the markdown file
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    filename = os.path.join(output_dir, f"{date_str}.md")
+    
+    with open(filename, "a", encoding="utf-8") as f:
+        f.write(f"# Progress Report for {repo} on {date_str}\n\n")
+        
+        f.write("## Pull Requests:\n")
+        if pull_requests:
+            for pr in pull_requests:
+                f.write(f"- [{pr['title']}]({pr['html_url']}) by @{pr['user']['login']}\n")
+        else:
+            f.write("- No open pull requests.\n")
+
+        f.write("\n## Issues:\n")
+        if issues:
+            for issue in issues:
+                f.write(f"- [{issue['title']}]({issue['html_url']}) by @{issue['user']['login']}\n")
+        else:
+            f.write("- No open issues.\n")
+        
+        f.write("\n---\n\n")

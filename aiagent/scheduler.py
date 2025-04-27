@@ -3,7 +3,7 @@ import json
 import click
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-from aiagent.github_api import fetch_repo_info, fetch_repo_releases
+from aiagent.github_api import fetch_repo_all
 from aiagent.report_renderer import render_reports
 from aiagent.notifier import notify
 from storage.local import load_tracked_repos
@@ -32,9 +32,8 @@ def update_projects():
         return
     try:
         for repo in tracked_repos:
-            repo_info = fetch_repo_info(repo)
-            releases = fetch_repo_releases(repo, count=1)  # 获取最新 release 信息
-            all_data.append({"repo": repo, "info": repo_info, "releases": releases})
+            repo_data = fetch_repo_all(repo)
+            all_data.append(repo_data)
     except Exception as e:
         click.echo(f"❌ 错误: 定时更新失败，原因：{str(e)}")
     report = render_reports(all_data)
